@@ -24,20 +24,14 @@ let rec handle_connection_reply ic oc () =
      | None -> Logs_lwt.info (fun m -> m "Connection closed") >>= Lwt.return)
 
 let rec handle_connection_out oc () =
-  while true do
-    print_string  "#=> ";
-    Out_channel.flush Out_channel.stdout;
-    let _ = match In_channel.input_line In_channel.stdin with
-    | Some(str) -> (
-        print_string  ("send=> " ^ str ^ "\n");
-        Out_channel.flush Out_channel.stdout;
-        let _ = Lwt_io.write_line oc str in
-        Lwt_io.flush_all() >>= Lwt.return
-      )
-    | _ -> Lwt_io.flush_all() >>= Lwt.return
-    in ()
-  done;
-  Logs_lwt.info (fun m -> m "No input from server" >>= Lwt.return)
+  print_string  "#=> ";
+  Out_channel.flush Out_channel.stdout;
+  match In_channel.input_line In_channel.stdin with
+  | Some str ->
+    let _ = Lwt_io.write_line oc str in
+    Lwt_io.flush_all () >>=
+    handle_connection_out oc
+  | None -> Logs_lwt.info (fun m -> m "No input from server" >>= Lwt.return)
 
 let accept_connection conn =
   let fd, _ = conn in
