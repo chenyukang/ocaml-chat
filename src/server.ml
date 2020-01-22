@@ -24,7 +24,7 @@ let rec handle_connection_reply ic oc () =
      | None -> Logs_lwt.info (fun m -> m "Connection closed") >>= Lwt.return)
 
 let rec handle_connection_out oc () =
-  print_string  "#=> ";
+  print_string  "[Server] #=> ";
   Out_channel.flush Out_channel.stdout;
   match In_channel.input_line In_channel.stdin with
   | Some str ->

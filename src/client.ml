@@ -4,11 +4,13 @@ open Lwt
 
 let client_fun ic oc =
   try
+    let print_cursor () =
+      print_string  "[Client] #=> ";
+      Out_channel.flush Out_channel.stdout in
     match Unix.fork () with
     | `In_the_parent pid -> (
       while true do
-        print_string  "#=> ";
-        Out_channel.flush Out_channel.stdout;
+        print_cursor ();
         match In_channel.input_line In_channel.stdin with
           | Some(str) -> (
               let str = str ^ "\n" in
@@ -23,8 +25,7 @@ let client_fun ic oc =
           match In_channel.input_line ic with
           | Some(r) -> (
               Printf.fprintf Out_channel.stdout "Response: %s\n" r;
-              print_string  "#=> ";
-              Out_channel.flush Out_channel.stdout;
+              print_cursor ();
             )
           | _ -> ();
         done;
