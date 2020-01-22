@@ -1,0 +1,4 @@
+PKG core lwt lwt_io logs_lwt logs unix stringext str lwt lwt.ppx lwt.unix core.ppx sys base
+
+B _build/
+CMT _build
