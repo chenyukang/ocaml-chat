@@ -11,27 +11,40 @@ let handle_message msg =
   | "inc"  -> counter := !counter + 1; "Counter has been incremented"
   | _      -> "Unknown command"
 
-let rec handle_connection ic oc () =
+let rec handle_connection_reply ic oc () =
   Lwt_io.read_line_opt ic >>=
   (fun msg ->
      match msg with
      | Some msg ->
        let reply = handle_message msg in
-       Lwt_io.write_line oc reply >>= handle_connection ic oc
-     | None -> Logs_lwt.info (fun m -> m "Connection closed") >>= return)
+       Lwt_io.write_line oc reply >>=
+       handle_connection_reply ic oc
+     | None -> Logs_lwt.info (fun m -> m "Connection closed") >>= Lwt.return)
+
+let rec handle_connection_out oc () =
+  Lwt_io.read_line_opt Lwt_io.stdin >>=
+  (fun input ->
+     match input with
+     | Some str -> Lwt_io.write_line oc str >>= handle_connection_out oc
+     | None -> Logs_lwt.info (fun m -> m "No input from server" >>= Lwt.return))
 
 let accept_connection conn =
   let fd, _ = conn in
   let ic = Lwt_io.of_fd ~mode:Lwt_io.Input fd in
   let oc = Lwt_io.of_fd ~mode:Lwt_io.Output fd in
-  Lwt.on_failure (handle_connection ic oc ())
-    (fun e -> Logs.err (fun m -> m "%s" (Caml.Printexc.to_string e) ));
-  Logs_lwt.info (fun m -> m "New connection") >>= return
+  let _ = match Unix.fork () with
+    | 0 ->
+        Lwt.on_failure (handle_connection_out oc ())
+          (fun e -> Logs.err (fun m -> m "%s" (Caml.Printexc.to_string e)))
+    | pid -> (
+        Lwt.on_failure (handle_connection_reply ic oc ())
+          (fun e -> Logs.err (fun m -> m "%s" (Caml.Printexc.to_string e)))) in
+  Logs_lwt.info (fun m -> m "New connection") >>= Lwt.return
 
 let create_socket listen_address port =
   let open Lwt_unix in
   let sock = socket PF_INET SOCK_STREAM 0 in
-  let _ = bind sock @@ ADDR_INET(listen_address, port) in
+  let _ = Lwt_unix.bind sock @@ ADDR_INET(listen_address, port) in
   listen sock backlog;
   sock
 

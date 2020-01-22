@@ -1,25 +1,34 @@
 open Core
 open Sys
+open Lwt
 
 let client_fun ic oc =
   try
-    while true do
-      print_string  "Send: ";
-      Out_channel.flush Out_channel.stdout;
-      let _ = match In_channel.input_line In_channel.stdin with
-        | Some(str) -> (
-            let str = str ^ "\n" in
-            Out_channel.output_string oc str;
-            Out_channel.flush oc;
-          )
-        | _ -> () in
-      match In_channel.input_line ic with
-      | Some(r) -> (
-          Printf.fprintf Out_channel.stdout "Response: %s\n" r;
-          if r = "END" then ( Unix.shutdown_connection ic ; raise Exit) ;
-        )
-      | _ -> ();
-    done
+    match Unix.fork () with
+    | `In_the_parent pid -> (
+      while true do
+        print_string  "#=> ";
+        Out_channel.flush Out_channel.stdout;
+        match In_channel.input_line In_channel.stdin with
+          | Some(str) -> (
+              let str = str ^ "\n" in
+              Out_channel.output_string oc str;
+              Out_channel.flush oc;
+            )
+          | _ -> ()
+      done
+    )
+    | `In_the_child -> (
+        while true do
+          match In_channel.input_line ic with
+          | Some(r) -> (
+              Printf.fprintf Out_channel.stdout "Response: %s\n" r;
+              print_string  "#=> ";
+              Out_channel.flush Out_channel.stdout;
+            )
+          | _ -> ();
+        done;
+      )
   with
     Exit -> exit 0
   | exn -> Unix.shutdown_connection ic ; raise exn
