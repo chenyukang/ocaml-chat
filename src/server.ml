@@ -15,7 +15,6 @@ let rec handle_connection_reply ic oc () =
          Lwt_io.flush_all () >>= handle_connection_reply ic oc
        ) else (
          Util.print_accepted_content "Client" "Server" msg;
-         Unix.sleep(3);
          let ack = Proto.ack_str msg in
          Lwt_io.write_line oc ack >>=
          handle_connection_reply ic oc
