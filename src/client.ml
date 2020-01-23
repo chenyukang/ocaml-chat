@@ -14,7 +14,6 @@ let client_fun ic oc =
         match In_channel.input_line In_channel.stdin with
         | Some(str) -> (
             let msg = (Proto.msg_to_json_str str) ^ "\n" in
-            (* Printf.fprintf Out_channel.stdout "msg: %s" msg; *)
             Out_channel.output_string oc msg;
             Out_channel.flush oc;
           )
@@ -26,16 +25,23 @@ let client_fun ic oc =
           match In_channel.input_line ic with
           | Some(r) -> (
               Printf.fprintf Out_channel.stdout "got: %s\n" r;
-              let m = Yojson.Basic.from_string r in
-              match Proto.is_ack m with
+              let msg = Yojson.Basic.from_string r in
+              match Proto.is_ack msg with
               | true -> (
-                  let send = Proto.msg_send_tm m in
-                  let ack = Proto.msg_ack_tm m in
-                  Printf.fprintf Out_channel.stdout "ack: [%f -> %f]\n" send ack;
+                  let send = Proto.msg_send_tm msg in
+                  let ack = Proto.msg_ack_tm msg in
+                  let content = Proto.msg_content msg in
+                  Printf.fprintf Out_channel.stdout
+                    "ack content(%s): [%f -> %f]\n" content send ack;
+                  print_cursor ();
                 )
-              | false ->
+              | false -> (
                 Printf.fprintf Out_channel.stdout "Response: %s\n" r;
-              print_cursor ();
+                let ack = (Proto.ack_str msg) ^ "\n" in
+                Out_channel.output_string oc ack;
+                Out_channel.flush oc;
+                print_cursor ();
+              )
             )
           | _ -> ();
         done;

@@ -18,6 +18,9 @@ let msg_ack_tm m =
 let msg_send_tm m =
   m |> member "send_time" |> to_float
 
+let msg_content m =
+  m |> member "content" |> to_string
+
 let make_msg content =
   `Assoc
     [
@@ -35,6 +38,8 @@ let make_ack m =
       ("ack_time", `Float (Unix.time ()));
       ("send_time", `Float (m |> member "send_time" |> to_float)) ]
 
+let ack_str m =
+  Yojson.Basic.to_string (make_ack m)
 
 let msg_to_json_str m =
   let json = make_msg m in

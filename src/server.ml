@@ -6,28 +6,39 @@ open Core
 let counter = ref 0
 let backlog = 10
 
-let handle_message msg =
-  match Proto.is_ack msg with
-  | true -> ""
-  | false -> Yojson.Basic.to_string (Proto.make_ack msg)
+let print_cursor () =
+  print_string  "[Server] #=> ";
+  Out_channel.flush Out_channel.stdout
 
 let rec handle_connection_reply ic oc () =
-  let _ = Lwt_io.flush_all () in
   Lwt_io.read_line_opt ic >>=
   (fun msg ->
      match msg with
-     | Some str ->
-       let m = Yojson.Basic.from_string str in
-       let reply = handle_message m in
-       Lwt_io.write_line oc reply >>=
-       handle_connection_reply ic oc
+     | Some(str) -> (
+       let msg = Yojson.Basic.from_string str in
+       match Proto.is_ack msg with
+       | false -> (
+           let reply = Proto.ack_str msg in
+           Lwt_io.write_line oc reply >>=
+           handle_connection_reply ic oc
+         )
+       | true -> (
+           let send = Proto.msg_send_tm msg in
+           let ack = Proto.msg_ack_tm msg in
+           let content = Proto.msg_content msg in
+           Printf.fprintf Out_channel.stdout
+             "ack content(%s): [%f -> %f]\n" content send ack;
+           print_cursor ();
+           Lwt_io.flush_all () >>= handle_connection_reply ic oc
+         )
+     )
      | None -> Logs_lwt.info (fun m -> m "Connection closed") >>= Lwt.return)
 
 let rec handle_connection_out oc () =
-  print_string  "[Server] #=> ";
-  Out_channel.flush Out_channel.stdout;
+  print_cursor ();
   match In_channel.input_line In_channel.stdin with
-  | Some str ->
+  | Some(str) ->
+    let str = (Proto.msg_to_json_str str) in
     let _ = Lwt_io.write_line oc str in
     Lwt_io.flush_all () >>=
     handle_connection_out oc
