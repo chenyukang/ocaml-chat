@@ -1,9 +1,9 @@
-OCAMLBUILD = cd ./src; corebuild -use-ocamlfind -pkg str,stringext,lwt,lwt.unix,logs,logs.lwt
+OCAMLBUILD = cd ./src; corebuild -use-ocamlfind -pkg str,stringext,lwt,lwt.unix,logs,logs.lwt,yojson
 
 defualt: chat
 
 prepare:
-	opam install -y core lwt logs stringext
+	opam install -y core lwt logs stringext yojson
 
 chat:
 	$(OCAMLBUILD) chat.native

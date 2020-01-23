@@ -7,18 +7,18 @@ let counter = ref 0
 let backlog = 10
 
 let handle_message msg =
-  match msg with
-  | "read" -> string_of_int !counter
-  | "inc"  -> counter := !counter + 1; "Counter has been incremented"
-  | _      -> "Unknown command"
+  match Proto.is_ack msg with
+  | true -> ""
+  | false -> Yojson.Basic.to_string (Proto.make_ack msg)
 
 let rec handle_connection_reply ic oc () =
-  let _ = Lwt_io.flush_all in
+  let _ = Lwt_io.flush_all () in
   Lwt_io.read_line_opt ic >>=
   (fun msg ->
      match msg with
-     | Some msg ->
-       let reply = handle_message msg in
+     | Some str ->
+       let m = Yojson.Basic.from_string str in
+       let reply = handle_message m in
        Lwt_io.write_line oc reply >>=
        handle_connection_reply ic oc
      | None -> Logs_lwt.info (fun m -> m "Connection closed") >>= Lwt.return)
