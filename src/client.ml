@@ -2,18 +2,18 @@ open Core
 open Sys
 open Lwt
 
+let write_to_server oc msg =
+  Out_channel.output_lines oc [msg];
+  Out_channel.flush oc
+
 let client_fun ic oc =
   try
-    Util.print_cursor "Client";
     match Unix.fork () with
     | `In_the_parent _ -> (
-      while true do
-        match In_channel.input_line In_channel.stdin with
-        | Some(str) -> (
-            let msg = (Proto.msg_to_json_str str) ^ "\n" in
-            Out_channel.output_string oc msg;
-            Out_channel.flush oc;
-          )
+        while true do
+          Util.print_cursor "Client";
+          match In_channel.input_line In_channel.stdin with
+          | Some(str) -> write_to_server oc (Proto.msg_to_json_str str)
           | _ -> ()
       done
     )
@@ -25,12 +25,10 @@ let client_fun ic oc =
               let msg = Yojson.Basic.from_string r in
               match Proto.is_ack msg with
               | true -> Util.print_ack "Server" "Client" msg;
-              | false -> (
+              | _ -> (
                   Util.print_accepted_content "Server" "Client" msg;
-                  let ack = (Proto.ack_str msg) ^ "\n" in
-                  Out_channel.output_string oc ack;
-                  Out_channel.flush oc;
-              )
+                  write_to_server oc (Proto.ack_str msg)
+                )
             )
           | _ -> ();
         done;

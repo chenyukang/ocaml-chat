@@ -10,24 +10,22 @@ let rec handle_connection_reply ic oc () =
      match msg with
      | Some(str) -> (
        let msg = Yojson.Basic.from_string str in
-       match Proto.is_ack msg with
-       | false -> (
-           Util.print_accepted_content "Client" "Sever" msg;
-           let reply = Proto.ack_str msg in
-           Lwt_io.write_line oc reply >>=
-           handle_connection_reply ic oc
-         )
-       | true -> (
-           Util.print_ack "Client" "Server" msg;
-           Lwt_io.flush_all () >>= handle_connection_reply ic oc
-         )
-     )
+       if Proto.is_ack msg then (
+         Util.print_ack "Client" "Server" msg;
+         Lwt_io.flush_all () >>= handle_connection_reply ic oc
+       ) else (
+         Util.print_accepted_content "Client" "Server" msg;
+         Unix.sleep(3);
+         let ack = Proto.ack_str msg in
+         Lwt_io.write_line oc ack >>=
+         handle_connection_reply ic oc
+         ))
      | None ->
        Logs_lwt.info (fun m -> m "Connection closed\n[Server] #=> ") >>= Lwt.return
   )
 
 let rec handle_connection_out oc () =
-  (* print_cursor (); *)
+  Util.print_cursor "Server";
   match In_channel.input_line In_channel.stdin with
   | Some(str) ->
     let str = (Proto.msg_to_json_str str) in
@@ -41,7 +39,6 @@ let accept_connection conn =
   let ic = Lwt_io.of_fd ~mode:Lwt_io.Input fd in
   let oc = Lwt_io.of_fd ~mode:Lwt_io.Output fd in
   let log = Logs_lwt.info (fun m -> m "New connection") in
-  Util.print_cursor "Server";
   let _ = match Unix.fork () with
     | `In_the_parent _ ->
         Lwt.on_failure (handle_connection_out oc ())
