@@ -7,15 +7,11 @@
 
 open Core
 open Sys
-open Lwt
-open Logs
-
 
 type mode =
   | Server
   | Client
   | Unknown
-
 
 let run_mode = ref Unknown
 let listen_address = ref UnixLabels.inet6_addr_loopback
