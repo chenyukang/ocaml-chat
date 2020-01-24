@@ -27,15 +27,14 @@ let client_fun ic oc =
               | true -> Util.print_ack "Server" "Client" msg;
               | _ -> (
                   Util.print_accepted_content "Server" "Client" msg;
-                  write_to_server oc (Proto.ack_str msg)
+                  write_to_server oc (Proto.make_ack_str msg)
                 )
             )
           | _ -> ();
         done;
       )
-  with
-    Exit -> exit 0
-  | exn -> Unix.shutdown_connection ic ; raise exn
+  with exn ->
+    Unix.shutdown_connection ic ; raise exn
 
 let run_client addr port =
   try

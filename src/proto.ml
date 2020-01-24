@@ -8,14 +8,9 @@ type msg_ty = [
   | `String of string  (* content *)
 ]
 
-let is_ack m =
-  m |> member "is_ack" |> to_bool
-
-let msg_send_tm m =
-  m |> member "send_time" |> to_float
-
-let msg_content m =
-  m |> member "content" |> to_string
+let is_ack m = m |> member "is_ack" |> to_bool
+let msg_send_tm m = m |> member "send_time" |> to_float
+let msg_content m = m |> member "content" |> to_string
 
 let make_msg content =
   `Assoc
@@ -32,7 +27,7 @@ let make_ack m =
       ("content", `String (m |> member "content" |> to_string));
       ("send_time", `Float (m |> member "send_time" |> to_float)) ]
 
-let ack_str m =
+let make_ack_str m =
   Yojson.Basic.to_string (make_ack m)
 
 let msg_to_json_str m =
