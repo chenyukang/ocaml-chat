@@ -1,8 +1,8 @@
 open Yojson
 open Yojson.Basic.Util
 
-type msg_ty = [
-  | `Assoc of (string * json)
+type 't msg_ty = [
+  | `Assoc of (string * 't)
   | `Bool of bool      (* is ACK? *)
   | `Int of int        (* send time *)
   | `String of string  (* content *)

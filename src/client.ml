@@ -42,5 +42,9 @@ let run_client addr port =
     let ic, oc = Unix.open_connection sockaddr
     in client_fun ic oc ;
     Unix.shutdown_connection ic
-  with _ -> failwith "run_client failed ..."
+  with e ->
+    Printf.fprintf Out_channel.stderr "%s\n" (Caml.Printexc.to_string e);
+    exit(1)
+
+
 
