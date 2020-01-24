@@ -27,9 +27,8 @@ let make_ack m =
       ("content", `String (m |> member "content" |> to_string));
       ("send_time", `Float (m |> member "send_time" |> to_float)) ]
 
-let make_ack_str m =
+let create_ack_str m =
   Yojson.Basic.to_string (make_ack m)
 
-let msg_to_json_str m =
-  let json = make_msg m in
-  Yojson.Basic.to_string json
+let create_msg_json_str c =
+  make_msg c |> Yojson.Basic.to_string

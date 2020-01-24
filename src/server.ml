@@ -8,7 +8,7 @@ let rec handle_console oc () =
   Lwt_io.read_line_opt stdin >>=
   (function
     | Some(str) ->
-      let str = Proto.msg_to_json_str str in
+      let str = Proto.create_msg_json_str str in
       (* Lwt_io.eprintf "%s" str >>= *)
       Lwt_io.write_line oc str >>=
       fun() -> Lwt_io.eprintf "[Server]: $=> " >>=
@@ -22,16 +22,16 @@ let rec handle_reply ic oc lwt_input () =
   (function
     | Some(str) -> (
         let msg = Yojson.Basic.from_string str in
-        let rep = match Proto.is_ack msg with
+        let resp = match Proto.is_ack msg with
           | true -> (
               Util.print_ack "Client" "Server" msg;
               Lwt_io.flush_all ()
             )
           | _ -> (
               Util.print_accepted_content "Client" "Server" msg;
-              Proto.make_ack_str msg |> Lwt_io.write_line oc
+              Proto.create_ack_str msg |> Lwt_io.write_line oc
             ) in
-        rep >>= handle_reply ic oc lwt_input
+        resp >>= handle_reply ic oc lwt_input
       )
     | None -> (
         (* When client disconnect with server,

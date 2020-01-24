@@ -13,7 +13,7 @@ let client_fun ic oc =
         while true do
           Util.print_cursor "Client";
           match In_channel.input_line In_channel.stdin with
-          | Some(str) -> Proto.msg_to_json_str str |> write_to_server oc
+          | Some(str) -> Proto.create_msg_json_str str |> write_to_server oc
           | _ -> ()
       done
     )
@@ -27,7 +27,7 @@ let client_fun ic oc =
               | true -> Util.print_ack "Server" "Client" msg;
               | _ -> (
                   Util.print_accepted_content "Server" "Client" msg;
-                  write_to_server oc (Proto.make_ack_str msg)
+                  write_to_server oc (Proto.create_ack_str msg)
                 )
             )
           | _ -> ();
