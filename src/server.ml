@@ -8,18 +8,18 @@ let rec handle_connection_reply ic oc () =
   (function
     | Some(str) -> (
         let msg = Yojson.Basic.from_string str in
-        if Proto.is_ack msg then (
-         Util.print_ack "Client" "Server" msg;
-         Lwt_io.flush_all () >>= handle_connection_reply ic oc
-       ) else (
+        match Proto.is_ack msg with
+        | true -> (
+          Util.print_ack "Client" "Server" msg;
+          Lwt_io.flush_all () >>= handle_connection_reply ic oc
+        )
+        | _ -> (
          Util.print_accepted_content "Client" "Server" msg;
-         let ack = Proto.make_ack_str msg in
-         Lwt_io.write_line oc ack >>=
-         handle_connection_reply ic oc
-         ))
+         Proto.make_ack_str msg |> Lwt_io.write_line oc >>= handle_connection_reply ic oc
+       ))
     | None ->
       let _ = Lwt_io.close oc >>= Lwt.return in
-      Logs_lwt.info (fun m -> m "\nConnection closed...\n") >>= Lwt.return
+      Logs_lwt.info (fun m -> m "\nConnection closed ...\n") >>= Lwt.return
   )
 
 let rec handle_connection_out oc () =
@@ -27,11 +27,9 @@ let rec handle_connection_out oc () =
   Lwt_io.read_line_opt Lwt_io.stdin >>=
   (function
     | Some(str) ->
-      let str = (Proto.msg_to_json_str str) in
-      Lwt_io.write_line oc str
-      >>= handle_connection_out oc
+      (Proto.msg_to_json_str str) |> Lwt_io.write_line oc >>= handle_connection_out oc
     | None ->
-      Logs_lwt.info (fun m -> m "\nNo input...\n") >>= Lwt.return
+      Logs_lwt.info (fun m -> m "\nNo input ...\n") >>= Lwt.return
   )
 
 let accept_connection conn =
